@@ -28,14 +28,15 @@ namespace dds
             MESSAGE_HANDLER(cmdGET_HOST_INFO, on_cmdGET_HOST_INFO)
             MESSAGE_HANDLER(cmdSHUTDOWN, on_cmdSHUTDOWN)
             MESSAGE_HANDLER(cmdBINARY_ATTACHMENT_RECEIVED, on_cmdBINARY_ATTACHMENT_RECEIVED)
-            MESSAGE_HANDLER(cmdGET_ID, on_cmdGET_ID)
-            MESSAGE_HANDLER(cmdSET_ID, on_cmdSET_ID)
+            MESSAGE_HANDLER(cmdGET_UUID, on_cmdGET_UUID)
+            MESSAGE_HANDLER(cmdSET_UUID, on_cmdSET_UUID)
             MESSAGE_HANDLER(cmdGET_LOG, on_cmdGET_LOG)
             MESSAGE_HANDLER(cmdASSIGN_USER_TASK, on_cmdASSIGN_USER_TASK)
             MESSAGE_HANDLER(cmdACTIVATE_AGENT, on_cmdACTIVATE_AGENT)
             MESSAGE_HANDLER(cmdSTOP_USER_TASK, on_cmdSTOP_USER_TASK)
             MESSAGE_HANDLER(cmdUPDATE_KEY, on_cmdUPDATE_KEY)
             MESSAGE_HANDLER(cmdDELETE_KEY, on_cmdDELETE_KEY)
+            MESSAGE_HANDLER(cmdSET_MASTER_AGENT, on_cmdSET_MASTER_AGENT)
             END_MSG_MAP()
 
             // gives the possibility to register a callback, which will be called when a user task is executed
@@ -45,6 +46,7 @@ namespace dds
             }
 
             void updateKey(const std::string& _key, const std::string& _value);
+            void UpdateNumberOfConnectedAgents(const size_t& _newNumber);
 
           private:
             // Message Handlers
@@ -67,6 +69,7 @@ namespace dds
                 protocol_api::SCommandAttachmentImpl<protocol_api::cmdSTOP_USER_TASK>::ptr_t _attachment);
             bool on_cmdUPDATE_KEY(protocol_api::SCommandAttachmentImpl<protocol_api::cmdUPDATE_KEY>::ptr_t _attachment);
             bool on_cmdDELETE_KEY(protocol_api::SCommandAttachmentImpl<protocol_api::cmdDELETE_KEY>::ptr_t _attachment);
+            bool on_cmdSET_MASTER_AGENT(SCommandAttachmentImpl<cmdSET_MASTER_AGENT>::ptr_t _attachment);
 
           private:
             void readAgentIDFile();

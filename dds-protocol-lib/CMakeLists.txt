@@ -31,6 +31,7 @@ set( SOURCE_FILES
 	./src/UserTaskDoneCmd.cpp
 	./src/GetPropValuesCmd.cpp
 	./src/SetTopologyCmd.cpp
+	./src/Uint32Cmd.cpp
 )
 
 set( SRC_HDRS
@@ -59,6 +60,7 @@ set( SRC_HDRS
 	./src/UserTaskDoneCmd.h
 	./src/GetPropValuesCmd.h
 	./src/SetTopologyCmd.h
+	./src/Uint32Cmd.h
 )
 
 include_directories(

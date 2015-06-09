@@ -23,6 +23,7 @@
 #include "DeleteKeyCmd.h"
 #include "GetPropValuesCmd.h"
 #include "SetTopologyCmd.h"
+#include "Uint32Cmd.h"
 
 #define REGISTER_CMD_ATTACHMENT(_class, _cmd)                                           \
     template <>                                                                         \
@@ -81,8 +82,8 @@ namespace dds
         REGISTER_CMD_ATTACHMENT(SHostInfoCmd, cmdREPLY_HOST_INFO)
         REGISTER_CMD_ATTACHMENT(SSimpleMsgCmd, cmdREPLY_PID)
         REGISTER_CMD_ATTACHMENT(SBinaryAttachmentCmd, cmdBINARY_ATTACHMENT)
-        REGISTER_CMD_ATTACHMENT(SIDCmd, cmdREPLY_ID)
-        REGISTER_CMD_ATTACHMENT(SIDCmd, cmdSET_ID)
+        REGISTER_CMD_ATTACHMENT(SUUIDCmd, cmdREPLY_UUID)
+        REGISTER_CMD_ATTACHMENT(SUUIDCmd, cmdSET_UUID)
         REGISTER_CMD_ATTACHMENT(SAgentsInfoCmd, cmdREPLY_AGENTS_INFO)
         REGISTER_CMD_ATTACHMENT(SAssignUserTaskCmd, cmdASSIGN_USER_TASK)
         REGISTER_CMD_ATTACHMENT(SBinaryAttachmentReceivedCmd, cmdBINARY_ATTACHMENT_RECEIVED)
@@ -93,7 +94,8 @@ namespace dds
         REGISTER_CMD_ATTACHMENT(SDeleteKeyCmd, cmdDELETE_KEY)
         REGISTER_CMD_ATTACHMENT(SGetPropValuesCmd, cmdGET_PROP_VALUES)
         REGISTER_CMD_ATTACHMENT(SSetTopologyCmd, cmdSET_TOPOLOGY)
+        REGISTER_CMD_ATTACHMENT(SHostInfoCmd, cmdSET_MASTER_AGENT)
+        REGISTER_CMD_ATTACHMENT(SUint32Cmd, cmdAGENT_TEAM_SIZE)
     }
-}
 
 #endif /* PROTOCOLMESSAGES_H_ */

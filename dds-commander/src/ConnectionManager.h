@@ -1,4 +1,4 @@
-// Copyright 2014 GSI, Inc. All rights reserved.
+// Copyright 2015 GSI, Inc. All rights reserved.
 //
 //
 //
@@ -11,6 +11,7 @@
 #include "Options.h"
 #include "Topology.h"
 #include "SSHScheduler.h"
+#include "MasterAgent.h"
 // STD
 #include <mutex>
 // BOOST
@@ -76,6 +77,8 @@ namespace dds
             bool on_cmdREPLY_ID(protocol_api::SCommandAttachmentImpl<protocol_api::cmdREPLY_ID>::ptr_t _attachment,
                                 CAgentChannel::weakConnectionPtr_t _channel);
 
+            CAgentChannel::weakConnectionPtr_t getAgentByID(const boost::uuids::uuid& _id);
+
           private:
             uint64_t getAgentId();
 
@@ -97,6 +100,8 @@ namespace dds
             // Set stores all generated agent ID to be able to detect collisions
             std::set<uint64_t> m_agentIdSet;
             std::mutex m_agentIdSetMutex;
+
+            CMasterAgent m_masterAgentMng;
         };
     }
 }

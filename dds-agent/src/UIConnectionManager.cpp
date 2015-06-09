@@ -59,13 +59,36 @@ void CUIConnectionManager::_deleteInfoFile() const
 
 void CUIConnectionManager::newClientCreated(CUIChannel::connectionPtr_t _newClient)
 {
-    // Subscribe on protocol messages
-    function<bool(SCommandAttachmentImpl<cmdUPDATE_KEY>::ptr_t _attachment, CUIChannel * _channel)> fUPDATE_KEY =
-        [this](SCommandAttachmentImpl<cmdUPDATE_KEY>::ptr_t _attachment, CUIChannel* _channel) -> bool
+    switch (_newClient->getChannelType())
     {
-        return this->on_cmdUPDATE_KEY(_attachment, getWeakPtr(_channel));
-    };
-    _newClient->registerMessageHandler<cmdUPDATE_KEY>(fUPDATE_KEY);
+        case EChannelType::KEY_VALUE_GUARD:
+        {
+            // Subscribe on protocol messages
+            function<bool(SCommandAttachmentImpl<cmdUPDATE_KEY>::ptr_t _attachment, CUIChannel * _channel)>
+                fUPDATE_KEY = [this](SCommandAttachmentImpl<cmdUPDATE_KEY>::ptr_t _attachment,
+                                     CUIChannel* _channel) -> bool
+            {
+                return this->on_cmdUPDATE_KEY(_attachment, getWeakPtr(_channel));
+            };
+            _newClient->registerMessageHandler<cmdUPDATE_KEY>(fUPDATE_KEY);
+            break;
+        }
+        case EChannelType::AGENT:
+        {
+            // Master agent related
+            // Calculate the number of connected agents
+            auto condition = [](CUIChannel::connectionPtr_t _v)
+            {
+                return (_v->getChannelType() == EChannelType::AGENT);
+            };
+            const size_t nConnectedAgents = getChannels(condition).size();
+            auto p = m_commanderChannel.lock();
+            p->UpdateNumberOfConnectedAgents(nConnectedAgents);
+            break;
+        }
+        default:
+            return;
+    }
 }
 
 bool CUIConnectionManager::on_cmdUPDATE_KEY(SCommandAttachmentImpl<cmdUPDATE_KEY>::ptr_t _attachment,

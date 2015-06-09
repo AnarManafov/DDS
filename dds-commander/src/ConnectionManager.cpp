@@ -205,6 +205,43 @@ void CConnectionManager::newClientCreated(CAgentChannel::connectionPtr_t _newCli
         return this->on_cmdREPLY_ID(_attachment, getWeakPtr(_channel));
     };
     _newClient->registerMessageHandler<cmdREPLY_ID>(fREPLY_ID);
+
+    // we need to get notified when the agent is online
+    function<bool(SCommandAttachmentImpl<cmdREPLY_HOST_INFO>::ptr_t _attachment, CAgentChannel * _channel)>
+        fREPLY_HOST_INFO = [this](SCommandAttachmentImpl<cmdREPLY_HOST_INFO>::ptr_t _attachment,
+                                  CAgentChannel* _channel) -> bool
+    {
+        // if there is already a master for that host, then:
+        // - sent master info to the current agtent
+        // - close the connection
+        auto p = getWeakPtr(_channel).lock();
+        boost::uuids::uuid master_id;
+        try
+        {
+            master_id = this->m_masterAgentMng.getMasterAgent(p->getRemoteHostInfo().m_host);
+        }
+        catch (const exception& _e)
+        {
+            // no masters for this host
+            // add new agent to the list of potential master agents
+            this->m_masterAgentMng.addAgent(getWeakPtr(_channel));
+            LOG(info) << "Agent " << p->getId() << " is the master on " << p->getRemoteHostInfo().m_host;
+            // TODO: send agent the command to define it as a master
+            return true;
+        }
+
+        // find a master for a given host
+        auto master_agent = getAgentByID(master_id).lock();
+        p->pushMsg<cmdSET_MASTER_AGENT>(master_agent->getRemoteHostInfo());
+        LOG(info) << "Set Master Agent (" << master_id << ") for agent " << p->getId() << " on host "
+                  << p->getRemoteHostInfo().m_host;
+
+        // add new agent to the list of potential master agents
+        // Execute the following after the search, to avoid making self-master, when an agent is alone on the host
+        this->m_masterAgentMng.addAgent(getWeakPtr(_channel));
+        return true;
+    };
+    _newClient->registerMessageHandler<cmdREPLY_HOST_INFO>(fREPLY_HOST_INFO);
 }
 
 void CConnectionManager::_createInfoFile(const vector<size_t>& _ports) const
@@ -644,6 +681,9 @@ bool CConnectionManager::on_cmdGET_AGENTS_INFO(SCommandAttachmentImpl<cmdGET_AGE
         }
 
         ++cmd.m_nActiveAgents;
+        // Add a number of connected agents in case if the given agent is a master
+        cmd.m_nActiveAgents += ptr->getCountConnectedAgents();
+
         ss << " -------------->>> " << ptr->getId() << "\nHost Info: " << ptr->getRemoteHostInfo().m_username << "@"
            << ptr->getRemoteHostInfo().m_host << ":" << ptr->getRemoteHostInfo().m_DDSPath
            << "\nAgent pid: " << ptr->getRemoteHostInfo().m_agentPid
@@ -1005,7 +1045,6 @@ bool CConnectionManager::on_cmdSET_TOPOLOGY(SCommandAttachmentImpl<cmdSET_TOPOLO
         // Resolve topology
         m_topo.setXMLValidationDisabled(_attachment->m_nDisiableValidation);
         m_topo.init(_attachment->m_sTopologyFile);
-        auto p = _channel.lock();
         p->pushMsg<cmdSIMPLE_MSG>(
             SSimpleMsgCmd("new Topology is set to: " + _attachment->m_sTopologyFile, info, cmdSET_TOPOLOGY));
     }
@@ -1070,4 +1109,19 @@ uint64_t CConnectionManager::getAgentId()
         }
     } while (true);
     return 0;
+}
+
+CAgentChannel::weakConnectionPtr_t CConnectionManager::getAgentByID(const boost::uuids::uuid& _id)
+{
+    CAgentChannel::weakConnectionPtrVector_t channels(
+        getChannels([_id](CAgentChannel::connectionPtr_t _v)
+                    {
+                        return (_v->getChannelType() == EChannelType::AGENT && _v->getId() == _id);
+                    }));
+
+    if (channels.size() != 1)
+        LOG(error) << "getAgentByID: " << (channels.empty() ? "can't find agent by the given ID"
+                                                            : "returned more than agent by the given ID");
+
+    return channels[0];
 }

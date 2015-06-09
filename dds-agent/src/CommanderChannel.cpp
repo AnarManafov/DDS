@@ -523,3 +523,15 @@ bool CCommanderChannel::on_cmdDELETE_KEY(SCommandAttachmentImpl<cmdDELETE_KEY>::
 
     return true;
 }
+
+bool CCommanderChannel::on_cmdSET_MASTER_AGENT(SCommandAttachmentImpl<cmdSET_MASTER_AGENT>::ptr_t _attachment)
+{
+    return false;
+}
+
+void CCommanderChannel::UpdateNumberOfConnectedAgents(const size_t& _newNumber)
+{
+    SUint32Cmd cmd;
+    cmd.m_nUint32 = _newNumber;
+    pushMsg<cmdAGENT_TEAM_SIZE>(cmd);
+}

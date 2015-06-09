@@ -16,7 +16,43 @@ using namespace dds::commander_cmd;
 using namespace dds::user_defaults_api;
 using namespace dds::protocol_api;
 
-uint64_t CAgentChannel::getId() const
+CAgentChannel::CAgentChannel(boost::asio::io_service& _service)
+    : CServerChannelImpl<CAgentChannel>(_service, { EChannelType::AGENT, EChannelType::UI })
+    , m_taskID(0)
+    , m_state(EAgentState::unknown)
+    , m_nConnectedAgents(0)
+{
+    subscribeOnEvent(EChannelEvents::OnRemoteEndDissconnected,
+                     [](CAgentChannel* _channel)
+                     {
+                         LOG(MiscCommon::info) << "The Agent has closed the connection.";
+                     });
+
+    subscribeOnEvent(EChannelEvents::OnHandshakeOK,
+                     [this](CAgentChannel* _channel)
+                     {
+                         switch (getChannelType())
+                         {
+                             case EChannelType::AGENT:
+                             {
+                                 m_state = EAgentState::idle;
+                                 pushMsg<cmdGET_UUID>();
+                                 pushMsg<cmdGET_HOST_INFO>();
+                             }
+                                 return;
+                             case EChannelType::UI:
+                                 LOG(MiscCommon::info) << "The UI agent ["
+                                                       << socket().remote_endpoint().address().to_string()
+                                                       << "] has successfully connected.";
+                                 return;
+                             default:
+                                 // TODO: log unknown connection attempt
+                                 return;
+                         }
+                     });
+}
+
+const boost::uuids::uuid& CAgentChannel::getId() const
 {
     return m_id;
 }
@@ -77,7 +113,8 @@ bool CAgentChannel::on_cmdREPLY_HOST_INFO(SCommandAttachmentImpl<cmdREPLY_HOST_I
     LOG(info) << "The Agent [" << socket().remote_endpoint().address().to_string()
               << "] has successfully connected. Startup time: " << m_startUpTime.count() << " ms.";
 
-    return true;
+    // commander manager need to process Master Agent algorithms on this event
+    return false;
 }
 
 bool CAgentChannel::on_cmdGED_PID(SCommandAttachmentImpl<cmdGED_PID>::ptr_t _attachment)
@@ -225,4 +262,10 @@ bool CAgentChannel::on_cmdGET_PROP_VALUES(SCommandAttachmentImpl<cmdGET_PROP_VAL
 bool CAgentChannel::on_cmdSET_TOPOLOGY(SCommandAttachmentImpl<cmdSET_TOPOLOGY>::ptr_t _attachment)
 {
     return false;
+}
+
+bool CAgentChannel::on_cmdAGENT_TEAM_SIZE(SCommandAttachmentImpl<cmdAGENT_TEAM_SIZE>::ptr_t _attachment)
+{
+    m_nConnectedAgents = _attachment->m_nUint32;
+    return true;
 }

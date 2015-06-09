@@ -22,44 +22,9 @@ namespace dds
         };
         const std::array<std::string, 3> g_agentStates = { { "unknown", "idle", "executing" } };
 
-        class CAgentChannel : public protocol_api::CServerChannelImpl<CAgentChannel>
+        class CAgentChannel : public CServerChannelImpl<CAgentChannel>
         {
-            CAgentChannel(boost::asio::io_service& _service)
-                : CServerChannelImpl<CAgentChannel>(
-                      _service,
-                      { protocol_api::EChannelType::AGENT, protocol_api::EChannelType::UI })
-                , m_taskID(0)
-                , m_state(EAgentState::unknown)
-            {
-                subscribeOnEvent(protocol_api::EChannelEvents::OnRemoteEndDissconnected,
-                                 [](CAgentChannel* _channel)
-                                 {
-                                     LOG(MiscCommon::info) << "The Agent has closed the connection.";
-                                 });
-
-                subscribeOnEvent(protocol_api::EChannelEvents::OnHandshakeOK,
-                                 [this](CAgentChannel* _channel)
-                                 {
-                                     switch (getChannelType())
-                                     {
-                                         case protocol_api::EChannelType::AGENT:
-                                         {
-                                             m_state = EAgentState::idle;
-                                             pushMsg<protocol_api::cmdGET_ID>();
-                                             pushMsg<protocol_api::cmdGET_HOST_INFO>();
-                                         }
-                                             return;
-                                         case protocol_api::EChannelType::UI:
-                                             LOG(MiscCommon::info) << "The UI agent ["
-                                                                   << socket().remote_endpoint().address().to_string()
-                                                                   << "] has successfully connected.";
-                                             return;
-                                         default:
-                                             // TODO: log unknown connection attempt
-                                             return;
-                                     }
-                                 });
-            }
+            CAgentChannel(boost::asio::io_service& _service);
 
           public:
             BEGIN_MSG_MAP(CAgentChannel)
@@ -72,7 +37,7 @@ namespace dds
             MESSAGE_HANDLER(cmdGED_PID, on_cmdGED_PID)
             // - get Agents Info command
             MESSAGE_HANDLER(cmdGET_AGENTS_INFO, on_cmdGET_AGENTS_INFO)
-            MESSAGE_HANDLER(cmdREPLY_ID, on_cmdREPLY_ID)
+            MESSAGE_HANDLER(cmdREPLY_UUID, on_cmdREPLY_UUID)
             MESSAGE_HANDLER(cmdBINARY_ATTACHMENT_RECEIVED, on_cmdBINARY_ATTACHMENT_RECEIVED)
             MESSAGE_HANDLER(cmdTRANSPORT_TEST, on_cmdTRANSPORT_TEST)
             MESSAGE_HANDLER(cmdSIMPLE_MSG, on_cmdSIMPLE_MSG)
@@ -87,6 +52,8 @@ namespace dds
             MESSAGE_HANDLER(cmdWATCHDOG_HEARTBEAT, on_cmdWATCHDOG_HEARTBEAT)
             MESSAGE_HANDLER(cmdGET_PROP_LIST, on_cmdGET_PROP_LIST)
             MESSAGE_HANDLER(cmdGET_PROP_VALUES, on_cmdGET_PROP_VALUES)
+            // Master Agent logic related commands
+            MESSAGE_HANDLER(cmdAGENT_TEAM_SIZE, on_cmdAGENT_TEAM_SIZE)
             END_MSG_MAP()
 
           public:
@@ -129,6 +96,10 @@ namespace dds
             {
                 return m_propertyPTMutex;
             }
+            size_t getCountConnectedAgents() const
+            {
+                return m_nConnectedAgents;
+            }
 
           private:
             // Message Handlers
@@ -160,6 +131,7 @@ namespace dds
                 protocol_api::SCommandAttachmentImpl<protocol_api::cmdGET_PROP_VALUES>::ptr_t _attachment);
             bool on_cmdSET_TOPOLOGY(
                 protocol_api::SCommandAttachmentImpl<protocol_api::cmdSET_TOPOLOGY>::ptr_t _attachment);
+            bool on_cmdAGENT_TEAM_SIZE(SCommandAttachmentImpl<cmdAGENT_TEAM_SIZE>::ptr_t _attachment);
 
             std::string _remoteEndIDString()
             {
@@ -180,6 +152,9 @@ namespace dds
             EAgentState m_state;
             boost::property_tree::ptree m_propertyPT;
             std::mutex m_propertyPTMutex;
+            // a number of connected agentes.
+            // If the agent is not a master, the number will be equal to 0
+            size_t m_nConnectedAgents;
         };
     }
 }

@@ -22,6 +22,7 @@ set( SOURCE_FILES
 	./src/AgentChannel.cpp
     ./src/UIChannelInfo.cpp
     ./src/SSHScheduler.cpp
+	./src/MasterAgent.cpp
 )
 
 #
@@ -33,6 +34,7 @@ set( HEADER_FILES
 	./src/AgentChannel.h
     ./src/UIChannelInfo.h
     ./src/SSHScheduler.h
+	./src/MasterAgent.h
 )
 
 include_directories(

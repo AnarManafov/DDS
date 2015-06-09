@@ -146,6 +146,27 @@ void CAgentConnectionManager::start()
         };
         m_agent->registerMessageHandler<cmdSTOP_USER_TASK>(fSTOP_USER_TASK);
 
+        // Subscribe for cmdSET_MASTER_AGENT
+        std::function<bool(SCommandAttachmentImpl<cmdSET_MASTER_AGENT>::ptr_t _attachment,
+                           CCommanderChannel * _channel)> fSET_MASTER_AGENT =
+            [this](SCommandAttachmentImpl<cmdSET_MASTER_AGENT>::ptr_t _attachment, CCommanderChannel* _channel) -> bool
+        {
+            LOG(info) << "Commander requested to connect to Master Agent on " << _attachment->m_host << ":"
+                      << _attachment->m_agentPort;
+            // connect to master agent
+            tcp::resolver resolver(m_service);
+            tcp::resolver::query query(_attachment->m_host, to_string(_attachment->m_agentPort));
+            tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+            m_agent->set_endpoint(endpoint_iterator);
+            // stop current connection channel with command
+            // force reconnect on the new end point
+            // m_agent->sendYourself<cmdSHUTDOWN>();
+            m_agent->stop();
+            m_agent->reconnect();
+            return true;
+        };
+        m_agent->registerMessageHandler<cmdSET_MASTER_AGENT>(fSET_MASTER_AGENT);
+
         // Call this callback when a user process is activated
         m_agent->registerOnNewUserTaskCallback([this](pid_t _pid)
                                                {

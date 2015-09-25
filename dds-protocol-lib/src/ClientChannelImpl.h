@@ -103,6 +103,10 @@ namespace dds
                         }
                     });
             }
+            void set_endpoint(boost::asio::ip::tcp::resolver::iterator _endpoint_iterator)
+            {
+                m_endpoint_iterator = _endpoint_iterator;
+            }
 
           private:
             boost::asio::ip::tcp::resolver::iterator m_endpoint_iterator;

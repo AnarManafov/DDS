@@ -215,7 +215,7 @@ void CConnectionManager::newClientCreated(CAgentChannel::connectionPtr_t _newCli
         // - sent master info to the current agtent
         // - close the connection
         auto p = getWeakPtr(_channel).lock();
-        boost::uuids::uuid master_id;
+        uint64_t master_id;
         try
         {
             master_id = this->m_masterAgentMng.getMasterAgent(p->getRemoteHostInfo().m_host);
@@ -1111,7 +1111,7 @@ uint64_t CConnectionManager::getAgentId()
     return 0;
 }
 
-CAgentChannel::weakConnectionPtr_t CConnectionManager::getAgentByID(const boost::uuids::uuid& _id)
+CAgentChannel::weakConnectionPtr_t CConnectionManager::getAgentByID(uint64_t _id)
 {
     CAgentChannel::weakConnectionPtrVector_t channels(
         getChannels([_id](CAgentChannel::connectionPtr_t _v)

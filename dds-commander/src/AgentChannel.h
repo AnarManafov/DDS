@@ -22,7 +22,7 @@ namespace dds
         };
         const std::array<std::string, 3> g_agentStates = { { "unknown", "idle", "executing" } };
 
-        class CAgentChannel : public CServerChannelImpl<CAgentChannel>
+        class CAgentChannel : public protocol_api::CServerChannelImpl<CAgentChannel>
         {
             CAgentChannel(boost::asio::io_service& _service);
 
@@ -37,7 +37,7 @@ namespace dds
             MESSAGE_HANDLER(cmdGED_PID, on_cmdGED_PID)
             // - get Agents Info command
             MESSAGE_HANDLER(cmdGET_AGENTS_INFO, on_cmdGET_AGENTS_INFO)
-            MESSAGE_HANDLER(cmdREPLY_UUID, on_cmdREPLY_UUID)
+            MESSAGE_HANDLER(cmdREPLY_ID, on_cmdREPLY_ID)
             MESSAGE_HANDLER(cmdBINARY_ATTACHMENT_RECEIVED, on_cmdBINARY_ATTACHMENT_RECEIVED)
             MESSAGE_HANDLER(cmdTRANSPORT_TEST, on_cmdTRANSPORT_TEST)
             MESSAGE_HANDLER(cmdSIMPLE_MSG, on_cmdSIMPLE_MSG)
@@ -131,7 +131,8 @@ namespace dds
                 protocol_api::SCommandAttachmentImpl<protocol_api::cmdGET_PROP_VALUES>::ptr_t _attachment);
             bool on_cmdSET_TOPOLOGY(
                 protocol_api::SCommandAttachmentImpl<protocol_api::cmdSET_TOPOLOGY>::ptr_t _attachment);
-            bool on_cmdAGENT_TEAM_SIZE(SCommandAttachmentImpl<cmdAGENT_TEAM_SIZE>::ptr_t _attachment);
+            bool on_cmdAGENT_TEAM_SIZE(
+                protocol_api::SCommandAttachmentImpl<protocol_api::cmdAGENT_TEAM_SIZE>::ptr_t _attachment);
 
             std::string _remoteEndIDString()
             {

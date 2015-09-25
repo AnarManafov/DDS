@@ -77,7 +77,7 @@ namespace dds
             bool on_cmdREPLY_ID(protocol_api::SCommandAttachmentImpl<protocol_api::cmdREPLY_ID>::ptr_t _attachment,
                                 CAgentChannel::weakConnectionPtr_t _channel);
 
-            CAgentChannel::weakConnectionPtr_t getAgentByID(const boost::uuids::uuid& _id);
+            CAgentChannel::weakConnectionPtr_t getAgentByID(uint64_t _id);
 
           private:
             uint64_t getAgentId();

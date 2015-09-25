@@ -36,7 +36,7 @@ CAgentChannel::CAgentChannel(boost::asio::io_service& _service)
                              case EChannelType::AGENT:
                              {
                                  m_state = EAgentState::idle;
-                                 pushMsg<cmdGET_UUID>();
+                                 pushMsg<cmdGET_ID>();
                                  pushMsg<cmdGET_HOST_INFO>();
                              }
                                  return;
@@ -52,7 +52,7 @@ CAgentChannel::CAgentChannel(boost::asio::io_service& _service)
                      });
 }
 
-const boost::uuids::uuid& CAgentChannel::getId() const
+uint64_t CAgentChannel::getId() const
 {
     return m_id;
 }

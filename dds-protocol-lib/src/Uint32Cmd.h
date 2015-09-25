@@ -10,7 +10,7 @@
 
 namespace dds
 {
-    struct SUint32Cmd : public SBasicCmd<SUint32Cmd>
+    struct SUint32Cmd : public protocol_api::SBasicCmd<SUint32Cmd>
     {
         SUint32Cmd()
             : m_nUint32(0)

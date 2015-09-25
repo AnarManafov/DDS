@@ -7,12 +7,13 @@
 #include "MasterAgent.h"
 
 using namespace dds;
+using namespace dds::commander_cmd;
 using namespace std;
 
 bool CMasterAgent::addAgent(CAgentChannel::weakConnectionPtr_t _channel)
 {
     auto p = _channel.lock();
-    const boost::uuids::uuid id = p->getId();
+    const uint64_t id = p->getId();
     const string sAgentHost = p->getRemoteHostInfo().m_host;
 
     lock_guard<mutex> lock(m_mutex);
@@ -28,7 +29,7 @@ bool CMasterAgent::addAgent(CAgentChannel::weakConnectionPtr_t _channel)
     return true;
 }
 
-boost::uuids::uuid CMasterAgent::getMasterAgent(const std::string& _host) throw(std::runtime_error)
+uint64_t CMasterAgent::getMasterAgent(const std::string& _host) throw(std::runtime_error)
 {
     lock_guard<mutex> lock(m_mutex);
     auto found = m_HostToAgent.find(_host);

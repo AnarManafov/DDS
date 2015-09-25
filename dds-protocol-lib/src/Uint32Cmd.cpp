@@ -8,9 +8,10 @@
 
 using namespace std;
 using namespace dds;
+using namespace dds::protocol_api;
 namespace inet = MiscCommon::INet;
 
-void SUint32Cmd::normalizeToLocal() const
+void ::SUint32Cmd::normalizeToLocal() const
 {
     m_nUint32 = inet::normalizeRead(m_nUint32);
 }

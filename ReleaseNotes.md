@@ -1,6 +1,10 @@
 # DDS Release Notes
 
 ## v1.2 (Not Yet Released)
+### dds-protocol-lib
+Added: sending of arrays (GH-105)   
+Added: sending of strings (GH-106)   
+Added: generalized implementation of DDS commands (GH-107)   
 
 
 ## v1.0 (2015-11-20)

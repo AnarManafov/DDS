@@ -14,10 +14,18 @@
 // STD
 #include <unistd.h>
 #include <stdexcept>
+#include <iterator>
+#include <algorithm>
 // MiscCommon
 #include "ErrorCode.h"
 #include "MiscUtils.h"
 #include "def.h"
+// BOOST
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-register"
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#pragma clang diagnostic pop
 
 /// this macro indicates an invalid status of the socket
 #define INVALID_SOCKET -1
@@ -639,6 +647,17 @@ namespace MiscCommon
         void readData(T* _value, const MiscCommon::BYTEVector_t* _data, size_t* _nPos);
 
         template <>
+        inline void readData<uint8_t>(uint8_t* _value, const MiscCommon::BYTEVector_t* _data, size_t* _nPos)
+        {
+            if (_data == nullptr || _nPos == nullptr || _value == nullptr)
+                throw std::invalid_argument("readDataFromContainer");
+
+            *_value = (*_data)[*_nPos];
+
+            ++(*_nPos);
+        }
+
+        template <>
         inline void readData<uint16_t>(uint16_t* _value, const MiscCommon::BYTEVector_t* _data, size_t* _nPos)
         {
             if (_data == nullptr || _nPos == nullptr || _value == nullptr)
@@ -646,6 +665,8 @@ namespace MiscCommon
 
             *_value = (*_data)[*_nPos];
             *_value += ((*_data)[++(*_nPos)] << 8);
+
+            *_value = normalizeRead(*_value);
 
             ++(*_nPos);
         }
@@ -660,6 +681,8 @@ namespace MiscCommon
             *_value += ((*_data)[++(*_nPos)] << 8);
             *_value += ((*_data)[++(*_nPos)] << 16);
             *_value += ((*_data)[++(*_nPos)] << 24);
+
+            *_value = normalizeRead(*_value);
 
             ++(*_nPos);
         }
@@ -679,11 +702,128 @@ namespace MiscCommon
             *_value += ((uint64_t)(*_data)[++(*_nPos)] << 48);
             *_value += ((uint64_t)(*_data)[++(*_nPos)] << 56);
 
+            *_value = normalizeRead(*_value);
+
             ++(*_nPos);
+        }
+
+        template <>
+        inline void readData<std::string>(std::string* _value, const MiscCommon::BYTEVector_t* _data, size_t* _nPos)
+        {
+            if (_data == nullptr || _nPos == nullptr || _value == nullptr)
+                throw std::invalid_argument("readDataFromContainer");
+
+            // Read number of elements in the string
+            uint32_t n = 0;
+            readData(&n, _data, _nPos);
+
+            MiscCommon::BYTEVector_t::const_iterator iter = _data->begin();
+            std::advance(iter, *_nPos);
+            MiscCommon::BYTEVector_t::const_iterator iter_end = _data->begin();
+            std::advance(iter_end, (*_nPos + n));
+            std::copy(iter, iter_end, back_inserter(*_value));
+
+            *_nPos += n;
+        }
+
+        template <>
+        inline void readData<boost::uuids::uuid>(boost::uuids::uuid* _value,
+                                                 const MiscCommon::BYTEVector_t* _data,
+                                                 size_t* _nPos)
+        {
+            if (_data == nullptr || _nPos == nullptr || _value == nullptr)
+                throw std::invalid_argument("readDataFromContainer");
+
+            MiscCommon::BYTEVector_t::const_iterator iter = _data->begin();
+            std::advance(iter, *_nPos);
+            MiscCommon::BYTEVector_t::const_iterator iter_end = _data->begin();
+            std::advance(iter_end, (*_nPos + boost::uuids::uuid::static_size()));
+            copy(iter, iter_end, _value->begin());
+            (*_nPos) += boost::uuids::uuid::static_size();
+        }
+
+        template <typename T>
+        inline void readDataVector(std::vector<T>* _value, const MiscCommon::BYTEVector_t* _data, size_t* _nPos)
+        {
+            if (_data == nullptr || _nPos == nullptr || _value == nullptr)
+                throw std::invalid_argument("readDataFromContainer");
+
+            // Read number of elements in the vector
+            uint32_t n = 0;
+            readData(&n, _data, _nPos);
+
+            _value->reserve(n);
+            for (size_t i = 0; i < n; ++i)
+            {
+                T v;
+                readData(&v, _data, _nPos);
+                _value->push_back(v);
+            }
+        }
+
+        template <>
+        inline void readData<std::vector<uint8_t>>(std::vector<uint8_t>* _value,
+                                                   const MiscCommon::BYTEVector_t* _data,
+                                                   size_t* _nPos)
+        {
+            if (_data == nullptr || _nPos == nullptr || _value == nullptr)
+                throw std::invalid_argument("readDataFromContainer");
+
+            uint32_t n = 0;
+            readData(&n, _data, _nPos);
+
+            MiscCommon::BYTEVector_t::const_iterator iter = _data->begin();
+            std::advance(iter, *_nPos);
+            MiscCommon::BYTEVector_t::const_iterator iter_end = _data->begin();
+            std::advance(iter_end, (*_nPos + n));
+            std::copy(iter, iter_end, back_inserter(*_value));
+
+            *_nPos += n;
+        }
+
+        template <>
+        inline void readData<std::vector<uint16_t>>(std::vector<uint16_t>* _value,
+                                                    const MiscCommon::BYTEVector_t* _data,
+                                                    size_t* _nPos)
+        {
+            readDataVector<uint16_t>(_value, _data, _nPos);
+        }
+
+        template <>
+        inline void readData<std::vector<uint32_t>>(std::vector<uint32_t>* _value,
+                                                    const MiscCommon::BYTEVector_t* _data,
+                                                    size_t* _nPos)
+        {
+            readDataVector<uint32_t>(_value, _data, _nPos);
+        }
+
+        template <>
+        inline void readData<std::vector<uint64_t>>(std::vector<uint64_t>* _value,
+                                                    const MiscCommon::BYTEVector_t* _data,
+                                                    size_t* _nPos)
+        {
+            readDataVector<uint64_t>(_value, _data, _nPos);
+        }
+
+        template <>
+        inline void readData<std::vector<std::string>>(std::vector<std::string>* _value,
+                                                       const MiscCommon::BYTEVector_t* _data,
+                                                       size_t* _nPos)
+        {
+            readDataVector<std::string>(_value, _data, _nPos);
         }
 
         template <typename T>
         void pushData(const T& _value, MiscCommon::BYTEVector_t* _data);
+
+        template <>
+        inline void pushData<uint8_t>(const uint8_t& _value, MiscCommon::BYTEVector_t* _data)
+        {
+            if (_data == nullptr)
+                throw std::invalid_argument("pushDataFromContainer");
+
+            _data->push_back(_value);
+        }
 
         template <>
         inline void pushData<uint16_t>(const uint16_t& _value, MiscCommon::BYTEVector_t* _data)
@@ -691,8 +831,9 @@ namespace MiscCommon
             if (_data == nullptr)
                 throw std::invalid_argument("pushDataFromContainer");
 
-            _data->push_back(_value & 0xFF);
-            _data->push_back(_value >> 8);
+            uint16_t value = normalizeWrite(_value);
+            _data->push_back(value & 0xFF);
+            _data->push_back(value >> 8);
         }
 
         template <>
@@ -701,10 +842,11 @@ namespace MiscCommon
             if (_data == nullptr)
                 throw std::invalid_argument("pushDataFromContainer");
 
-            _data->push_back(_value & 0xFF);
-            _data->push_back((_value >> 8) & 0xFF);
-            _data->push_back((_value >> 16) & 0xFF);
-            _data->push_back((_value >> 24) & 0xFF);
+            uint32_t value = normalizeWrite(_value);
+            _data->push_back(value & 0xFF);
+            _data->push_back((value >> 8) & 0xFF);
+            _data->push_back((value >> 16) & 0xFF);
+            _data->push_back((value >> 24) & 0xFF);
         }
 
         template <>
@@ -713,14 +855,90 @@ namespace MiscCommon
             if (_data == nullptr)
                 throw std::invalid_argument("pushDataFromContainer");
 
-            _data->push_back(_value & 0xFF);
-            _data->push_back((_value >> 8) & 0xFF);
-            _data->push_back((_value >> 16) & 0xFF);
-            _data->push_back((_value >> 24) & 0xFF);
-            _data->push_back((_value >> 32) & 0xFF);
-            _data->push_back((_value >> 40) & 0xFF);
-            _data->push_back((_value >> 48) & 0xFF);
-            _data->push_back((_value >> 56) & 0xFF);
+            uint64_t value = normalizeWrite(_value);
+            _data->push_back(value & 0xFF);
+            _data->push_back((value >> 8) & 0xFF);
+            _data->push_back((value >> 16) & 0xFF);
+            _data->push_back((value >> 24) & 0xFF);
+            _data->push_back((value >> 32) & 0xFF);
+            _data->push_back((value >> 40) & 0xFF);
+            _data->push_back((value >> 48) & 0xFF);
+            _data->push_back((value >> 56) & 0xFF);
+        }
+
+        template <>
+        inline void pushData<std::string>(const std::string& _value, MiscCommon::BYTEVector_t* _data)
+        {
+            if (_data == nullptr)
+                throw std::invalid_argument("pushDataFromContainer");
+
+            uint32_t n = _value.size();
+            pushData(n, _data);
+            copy(_value.begin(), _value.end(), back_inserter(*_data));
+        }
+
+        template <>
+        inline void pushData<boost::uuids::uuid>(const boost::uuids::uuid& _value, MiscCommon::BYTEVector_t* _data)
+        {
+            if (_data == nullptr)
+                throw std::invalid_argument("pushDataFromContainer");
+
+            copy(_value.begin(), _value.end(), back_inserter(*_data));
+        }
+
+        template <typename T>
+        inline void pushDataVector(const std::vector<T>& _value, MiscCommon::BYTEVector_t* _data)
+        {
+            if (_data == nullptr)
+                throw std::invalid_argument("pushDataFromContainer");
+
+            // Read number of elements in the vector
+            uint32_t n = _value.size();
+            pushData(n, _data);
+
+            for (const T& v : _value)
+            {
+                pushData(v, _data);
+            }
+        }
+
+        template <>
+        inline void pushData<std::vector<uint8_t>>(const std::vector<uint8_t>& _value, MiscCommon::BYTEVector_t* _data)
+        {
+            if (_data == nullptr)
+                throw std::invalid_argument("pushDataFromContainer");
+
+            uint32_t n = _value.size();
+            pushData(n, _data);
+            copy(_value.begin(), _value.end(), back_inserter(*_data));
+        }
+
+        template <>
+        inline void pushData<std::vector<uint16_t>>(const std::vector<uint16_t>& _value,
+                                                    MiscCommon::BYTEVector_t* _data)
+        {
+            pushDataVector<uint16_t>(_value, _data);
+        }
+
+        template <>
+        inline void pushData<std::vector<uint32_t>>(const std::vector<uint32_t>& _value,
+                                                    MiscCommon::BYTEVector_t* _data)
+        {
+            pushDataVector<uint32_t>(_value, _data);
+        }
+
+        template <>
+        inline void pushData<std::vector<uint64_t>>(const std::vector<uint64_t>& _value,
+                                                    MiscCommon::BYTEVector_t* _data)
+        {
+            pushDataVector<uint64_t>(_value, _data);
+        }
+
+        template <>
+        inline void pushData<std::vector<std::string>>(const std::vector<std::string>& _value,
+                                                       MiscCommon::BYTEVector_t* _data)
+        {
+            pushDataVector<std::string>(_value, _data);
         }
 
         /**

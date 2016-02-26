@@ -6,9 +6,9 @@
 // pod-ssh
 #include "worker.h"
 // MiscCommon
-#include "Logger.h"
-#include "Process.h"
 #include "SysHelper.h"
+#include "Process.h"
+#include "Logger.h"
 //=============================================================================
 using namespace std;
 using namespace dds;
@@ -17,7 +17,7 @@ using namespace MiscCommon;
 //=============================================================================
 const size_t g_cmdTimeout = 35; // in sec.
 //=============================================================================
-CWorker::CWorker(configRecord_t _rec, const SWNOptions& _options)
+CWorker::CWorker(ncf::configRecord_t _rec, const SWNOptions& _options)
     : m_rec(_rec)
     , m_options(_options)
     , m_mutex(mutexPtr_t(new boost::mutex()))

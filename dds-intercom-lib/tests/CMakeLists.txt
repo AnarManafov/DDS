@@ -58,3 +58,7 @@ install(TARGETS task-test_key_value DESTINATION tests)
 
 install(FILES ${dds_intercom_lib-tests_SOURCE_DIR}/topo_test_key-value-1.xml DESTINATION tests)
 install(FILES ${dds_intercom_lib-tests_SOURCE_DIR}/topo_test_key-value-2.xml DESTINATION tests)
+
+
+message (STATUS "Build dds_intercom-test-multiple-instances - YES")
+add_subdirectory ( ${dds_intercom_lib-tests_SOURCE_DIR}/dds_intercom-test-multiple-instances )

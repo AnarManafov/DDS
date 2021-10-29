@@ -76,6 +76,8 @@ namespace dds
             bool IsSessionRunning(const boost::uuids::uuid& _sid = boost::uuids::nil_uuid()) const;
             std::string getCommanderPidFileName() const;
             std::string getCommanderPidFile(const boost::uuids::uuid& _sid = boost::uuids::nil_uuid()) const;
+            std::string getAgentPidFileName() const;
+            std::string getAgentPidFile() const;
             std::string getWnBinsDir() const;
             static std::string getTopologyXSDFilePath();
             bool isAgentInstance() const;

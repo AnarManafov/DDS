@@ -706,6 +706,21 @@ string CUserDefaults::getCommanderPidFile(const boost::uuids::uuid& _sid) const
     return pathPidFile.string();
 }
 
+string CUserDefaults::getAgentPidFileName() const
+{
+    return "dds-agent.pid";
+}
+
+string CUserDefaults::getAgentPidFile() const
+{
+    string sWorkDir;
+
+    fs::path pathPidFile(getDDSPath());
+    pathPidFile /= CUserDefaults::instance().getAgentPidFileName();
+
+    return pathPidFile.string();
+}
+
 string CUserDefaults::getWnBinsDir() const
 {
     stringstream ss;

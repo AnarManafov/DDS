@@ -21,14 +21,16 @@ namespace dds
 {
     namespace agent_cmd
     {
-        /// \brief dds-commander's container of options
+        /// \brief dds-agent's container of options
         typedef struct SOptions
         {
             enum ECommands
             {
                 cmd_unknown,
                 cmd_start,
-                cmd_clean
+                cmd_clean,
+                cmd_check ///< Checks whether there is a running dds agent. Returns 0 if there is a running agent
+                          ///< instance, or >0 otherwise or in case of an error.
             };
             SOptions()
             {
@@ -40,6 +42,8 @@ namespace dds
                     return cmd_start;
                 else if ("clean" == _name)
                     return cmd_clean;
+                else if ("check" == _name)
+                    return cmd_check;
 
                 return cmd_unknown;
             }
@@ -66,7 +70,9 @@ namespace dds
                                   " by just specifying the command name directly, like:\ndds-agent start.\n\n"
                                   "Commands:\n"
                                   "   start: \tStart dds-agent\n"
-                                  "   clean: \tCleaning");
+                                  "   clean: \tCleaning"
+                                  "   check: \tChecks whether there is a running dds agent. Returns 0 if there is a "
+                                  "running agent instance, or >0 otherwise or in case of an error.");
             options.add_options()(
                 "slots,s", bpo::value<size_t>(&_options->m_slots), "Defines a number of task slots per agent.");
 

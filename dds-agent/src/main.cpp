@@ -68,11 +68,14 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
+    const string pidfile_name(CUserDefaults::instance().getAgentPidFile());
+
     // Checking for "start" option
     if (SOptions_t::cmd_start == options.m_Command)
     {
         try
         {
+            CPIDFile pidfile(pidfile_name, ::getpid());
             CSessionIDFile sid(dds::user_defaults_api::CUserDefaults::instance().getSIDFile());
             LOG(info) << "SESSION ID file: " << dds::user_defaults_api::CUserDefaults::instance().getSIDFile();
             if (sid.getLockedSID().empty())
@@ -108,6 +111,51 @@ int main(int argc, char* argv[])
         {
             dds::internal_api::CIntercomServiceCore::clean();
             clean();
+        }
+        catch (exception& e)
+        {
+            LOG(fatal) << e.what();
+            return EXIT_FAILURE;
+        }
+        catch (...)
+        {
+            LOG(fatal) << "Unexpected Exception occurred.";
+            return EXIT_FAILURE;
+        }
+    }
+
+    // Checking for "check" option
+    if (SOptions_t::cmd_check == options.m_Command)
+    {
+        try
+        {
+            const string agentIdFile(CUserDefaults::instance().getAgentIDFilePath());
+            // max wait interval is 10*100 ms = 5 sec
+            for (int i = 0; i < 50; ++i)
+            {
+                ifstream f(pidfile_name);
+                if (!f.is_open())
+                {
+                    this_thread::sleep_for(chrono::milliseconds(100));
+                    continue;
+                }
+                pid_t nAgentPid{ 0 };
+                f >> nAgentPid;
+                const bool bRunning = IsProcessRunning(nAgentPid);
+                // if process running, let's check it recieved a client ID from the commander
+                if (bRunning)
+                {
+                    ifstream fIdFile(agentIdFile);
+                    if(!fIdFile.is_open())
+                    {
+                        this_thread::sleep_for(chrono::milliseconds(100));
+                        continue;
+                    }
+                    uint64_t nAgentID{ 0 };
+                    fIdFile >> nAgentID;
+                    return (nAgentID > 0 ? EXIT_SUCCESS : EXIT_FAILURE);
+                }
+            }
         }
         catch (exception& e)
         {
